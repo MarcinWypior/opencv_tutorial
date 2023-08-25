@@ -8,14 +8,16 @@ while True:
     width = int(cap.get(3))
     height = int(cap.get(4))
 
-    img = cv2.line(frame, (0,0),(width,height),(255,0,0),10)
-    img = cv2.line(img, (0,height),(width,0),(0,128,128),10)
-    img = cv2.rectangle(img,(100,100),(300,300),(128,128,128),-1)
-    img = cv2.circle(img,(300,300),60,(0,0,255),-1)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    img = cv2.putText(img,"text",(200,200),font,1,(0,0,0),1,cv2.LINE_AA)
+    hsv =cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    lower_blue = np.array([7,20,20])
+    upper_blue = np.array([130,255,255])
 
-    cv2.imshow("frame",img)
+    mask = cv2.inRange(hsv,lower_blue,upper_blue)
+
+    result = cv2.bitwise_and(frame,frame,mask=mask)
+
+    cv2.imshow("frame",result)
+    cv2.imshow("mask",mask)
 
     if cv2.waitKey(1) == ord('q'):
         break
@@ -23,3 +25,7 @@ while True:
 cap.release()
 
 cv2.destroyAllWindows()
+
+BGR_color = np.array([[[255,0,0]]])
+x = cv2.cvtColor(BGR_color,cv2.COLOR_BGR2HSV)
+x[0][0]
