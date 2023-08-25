@@ -1,13 +1,17 @@
 import cv2
 import numpy as np
 
-img = cv2.imread("assets/image.jpg", -1)
+cap = cv2.VideoCapture(0)
 
-tag = img[70:170,90:190]
-img[:100,:100] = tag
+while True:
+    ret, frame =cap.read()
+    print(ret,frame)
 
+    cv2.imshow("frame",frame)
 
-cv2.imshow('image', img)
+    if cv2.waitKey(1) == ord('q'):
+        break
 
-cv2.waitKey(0)
+cap.release()
+
 cv2.destroyAllWindows()
