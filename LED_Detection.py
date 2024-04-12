@@ -10,24 +10,28 @@ class LED_Detection:
         self.capture_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print('capture_height: ', self.capture_height)
         self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
+        self.start_point = None
+        self.end_point = None
+        self.drawing = None
 
     def draw_rectangle(self,event, x, y, flags, param):
-        global start_point, end_point, drawing
 
         if event == cv2.EVENT_LBUTTONDOWN:
             drawing = True
-            start_point = (x, y)
+            self.start_point = (x, y)
         elif event == cv2.EVENT_MOUSEMOVE:
-            if drawing:
-                end_point = (x, y)
+            if self.drawing:
+                self.end_point = (x, y)
         elif event == cv2.EVENT_LBUTTONUP:
             drawing = False
-            cv2.rectangle(self.mask_of_rois, start_point, (x, y), (255, 0, 0), 1)
+            cv2.rectangle(self.mask_of_rois, self.start_point, (x, y), (255, 0, 0), 1)
             cv2.imshow("Rectangle Drawing", self.mask_of_rois)
 
+    def stop_capture(self):
+        self.cap.release()
+        cv2.destroyAllWindows()
 
 def main():
-
     led_detection = LED_Detection()
 
     prev_time = 0
@@ -46,8 +50,7 @@ def main():
         if cv2.waitKey(1) == ord('q'):
             break
 
-    led_detection.cap.release()
-    cv2.destroyAllWindows()
+    led_detection.stop_capture()
 
 if __name__ == "__main__":
     main()
