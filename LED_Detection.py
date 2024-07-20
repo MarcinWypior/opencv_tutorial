@@ -2,8 +2,8 @@ import cv2
 import time
 import os
 import numpy as np
-from xml_read_write import read_coordinates_from_xml,write_coordinates_to_xml
-from xml.dom import minidom
+from xml_read_write import read_coordinates_from_xml, write_coordinates_to_xml
+import threading
 
 
 class LED_Detection:
@@ -30,12 +30,49 @@ class LED_Detection:
             for roi in self.list_of_rois:
                 cv2.rectangle(self.mask_of_rois, roi[0], roi[1], (255, 0, 0), 2)
 
-
-
         # private variables used for drawing areas to check
         self._start_point = None
         self._end_point = None
         self._drawing = None
+
+    def start_capture(self):
+        t2 = threading.Thread(target=self._run, args=())
+        t2.start()
+
+    def stop_capture(self):
+        self.capture_run = False
+
+    def _run(self):
+        self.capture_run = True
+        prev_time = 0
+        while True:
+            ret, frame = self.cap.read()
+            current_time = time.time()
+            fps = 1 / (current_time - prev_time)
+            prev_time = current_time
+            self.print_roi_colors(frame)
+            cv2.putText(frame, f'FPS: {int(fps)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4, cv2.LINE_AA)
+            frame = cv2.bitwise_or(frame, self.mask_of_rois)
+            cv2.imshow('frame', frame)
+            cv2.setMouseCallback("frame", self.draw_rectangle)
+
+            # show windows with checked areas if list of areas is not empty
+            if self.list_of_rois:
+                cv2.imshow("Rectangle Drawing", self.mask_of_rois)
+            # destroy window with checked areas if list of areas is empty
+            if cv2.getWindowProperty("Rectangle Drawing", cv2.WND_PROP_VISIBLE) and not self.list_of_rois:
+                cv2.destroyWindow("Rectangle Drawing")
+
+            if cv2.waitKey(1) == ord('q'):
+                break
+
+            if not self.capture_run:
+                break
+
+            print(self.list_of_rois)
+
+        self.cap.release()
+        cv2.destroyAllWindows()
 
     def draw_rectangle(self, event, x, y, flags, param):
         def rising_order_for_roi(start, stop):
@@ -50,13 +87,14 @@ class LED_Detection:
             return (start_x, start_y), (stop_x, stop_y)
 
         if event == cv2.EVENT_LBUTTONDOWN:
-            drawing = True
+            _drawing = True
             self._start_point = (x, y)
+            cv2.rectangle(self.mask_of_rois, self._start_point, (x, y), (255, 0, 0), 2)
         elif event == cv2.EVENT_MOUSEMOVE:
             if self._drawing:
                 self._end_point = (x, y)
         elif event == cv2.EVENT_LBUTTONUP:
-            drawing = False
+            _drawing = False
             cv2.rectangle(self.mask_of_rois, self._start_point, (x, y), (255, 0, 0), 2)
             self.list_of_rois.append(rising_order_for_roi(self._start_point, (x, y)))
             cv2.imshow("Rectangle Drawing", self.mask_of_rois)
@@ -68,10 +106,6 @@ class LED_Detection:
     def print_roi_colors(self, frame):
         for roi in self.list_of_rois:
             create_pixel_matrix(frame, *roi[0], *roi[1])
-
-    def stop_capture(self):
-        self.cap.release()
-        cv2.destroyAllWindows()
 
 
 def print_pixels_in_area(frame, x1, y1, x2, y2):
@@ -100,31 +134,7 @@ def create_pixel_matrix(frame, x1, y1, x2, y2):
 
 def main():
     led_detection = LED_Detection()
-
-    prev_time = 0
-    while True:
-        ret, frame = led_detection.cap.read()
-        current_time = time.time()
-        fps = 1 / (current_time - prev_time)
-        prev_time = current_time
-        # print(led_detection.list_of_rois)
-        led_detection.print_roi_colors(frame)
-        cv2.putText(frame, f'FPS: {int(fps)}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4, cv2.LINE_AA)
-        frame = cv2.bitwise_or(frame, led_detection.mask_of_rois)
-        cv2.imshow('frame', frame)
-        cv2.setMouseCallback("frame", led_detection.draw_rectangle)
-
-        # show windows with checked areas if list of areas is not empty
-        if led_detection.list_of_rois:
-            cv2.imshow("Rectangle Drawing", led_detection.mask_of_rois)
-        # destroy window with checked areas if list of areas is empty
-        if cv2.getWindowProperty("Rectangle Drawing", cv2.WND_PROP_VISIBLE) and not led_detection.list_of_rois:
-            cv2.destroyWindow("Rectangle Drawing")
-
-        if cv2.waitKey(1) == ord('q'):
-            break
-
-        print(led_detection.list_of_rois)
+    led_detection.start_capture()
 
     led_detection.stop_capture()
 
