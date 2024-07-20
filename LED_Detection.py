@@ -2,6 +2,7 @@ import cv2
 import time
 import os
 import numpy as np
+from xml_read_write import read_coordinates_from_xml,write_coordinates_to_xml
 from xml.dom import minidom
 
 
@@ -14,22 +15,22 @@ class LED_Detection:
         print('capture_height: ', self.capture_height)
         self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
 
-        path_to_config_xml = r"C:\RAEngineering"
-        if not os.path.exists(path_to_config_xml):
-            os.makedirs(path_to_config_xml)
-        if not os.path.isfile(r"C:\RAEngineering\LED_detection_config.xml"):
-            print("config file doesn't exist")
-            doc = minidom.Document()
-
-            # Create the <root> base element
-            root = doc.createElement("list_of_areas")
-
-            with open(path_to_config_xml + r"\LED_detection_config.xml", "w") as file:
-                file.write(doc.toprettyxml(indent="  "))
+        path_to_RAEngineering = r"C:\RAEngineering"
+        path_to_xml_config = r"C:\RAEngineering\LED_detection_config.xml"
+        if not os.path.exists(path_to_RAEngineering):
+            os.makedirs(path_to_RAEngineering)
+        if not os.path.isfile(path_to_xml_config):
+            print("LED_detection_config.xml doesn't exist")
             self.list_of_rois = []
+            write_coordinates_to_xml(self.list_of_rois)
         else:
-            print("config file does exist")
-            self.list_of_rois = []
+            print("LED_detection_config.xml does exist")
+            self.list_of_rois = read_coordinates_from_xml(path_to_xml_config)
+
+            for roi in self.list_of_rois:
+                cv2.rectangle(self.mask_of_rois, roi[0], roi[1], (255, 0, 0), 2)
+
+
 
         # private variables used for drawing areas to check
         self._start_point = None
@@ -59,6 +60,7 @@ class LED_Detection:
             cv2.rectangle(self.mask_of_rois, self._start_point, (x, y), (255, 0, 0), 2)
             self.list_of_rois.append(rising_order_for_roi(self._start_point, (x, y)))
             cv2.imshow("Rectangle Drawing", self.mask_of_rois)
+            write_coordinates_to_xml(self.list_of_rois)
         elif event == cv2.EVENT_RBUTTONDOWN:
             self.list_of_rois = []
             self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
