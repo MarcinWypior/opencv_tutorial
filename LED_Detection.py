@@ -2,8 +2,9 @@ import cv2
 import time
 import numpy as np
 
+
 class LED_Detection:
-    def __init__(self,interface_NR=0,showPreview=False):
+    def __init__(self, interface_NR=0, showPreview=False):
         self.cap = cv2.VideoCapture(interface_NR)
         self.capture_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         print('capture width: ', self.capture_width)
@@ -11,11 +12,11 @@ class LED_Detection:
         print('capture_height: ', self.capture_height)
         self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
         self.list_of_rois = []
-        self.start_point = None
-        self.end_point = None
-        self.drawing = None
+        self._start_point = None
+        self._end_point = None
+        self._drawing = None
 
-    def draw_rectangle(self,event, x, y, flags, param):
+    def draw_rectangle(self, event, x, y, flags, param):
         def rising_order_for_roi(start, stop):
             start_x, start_y = start
             stop_x, stop_y = stop
@@ -29,14 +30,14 @@ class LED_Detection:
 
         if event == cv2.EVENT_LBUTTONDOWN:
             drawing = True
-            self.start_point = (x, y)
+            self._start_point = (x, y)
         elif event == cv2.EVENT_MOUSEMOVE:
-            if self.drawing:
-                self.end_point = (x, y)
+            if self._drawing:
+                self._end_point = (x, y)
         elif event == cv2.EVENT_LBUTTONUP:
             drawing = False
-            cv2.rectangle(self.mask_of_rois, self.start_point, (x, y), (255, 0, 0), 2)
-            self.list_of_rois.append(rising_order_for_roi(self.start_point,(x,y)))
+            cv2.rectangle(self.mask_of_rois, self._start_point, (x, y), (255, 0, 0), 2)
+            self.list_of_rois.append(rising_order_for_roi(self._start_point, (x, y)))
             cv2.imshow("Rectangle Drawing", self.mask_of_rois)
         elif event == cv2.EVENT_RBUTTONDOWN:
             self.list_of_rois = []
@@ -44,23 +45,22 @@ class LED_Detection:
             if self.list_of_rois:
                 cv2.imshow("Rectangle Drawing", self.mask_of_rois)
 
-
-
-    def print_roi_colors(self,frame):
+    def print_roi_colors(self, frame):
         for roi in self.list_of_rois:
-            print(create_pixel_matrix(frame,*roi[0],*roi[1]))
+            create_pixel_matrix(frame, *roi[0], *roi[1])
 
     def stop_capture(self):
         self.cap.release()
         cv2.destroyAllWindows()
 
+
 def print_pixels_in_area(frame, x1, y1, x2, y2):
-    # Iterate over the area defined by coordinates (x1, y1) and (x2, y2)
     for y in range(y1, y2):
         for x in range(x1, x2):
             # Get the BGR values of each pixel
             b, g, r = frame[y, x]
             print(f'Pixel at ({x}, {y}) - B: {b}, G: {g}, R: {r}')
+
 
 def create_pixel_matrix(frame, x1, y1, x2, y2):
     # Define the dimensions of the matrix
@@ -75,8 +75,8 @@ def create_pixel_matrix(frame, x1, y1, x2, y2):
         for x in range(x1, x2):
             # Get the BGR values of each pixel and store them in the matrix
             pixel_matrix[y - y1, x - x1] = frame[y, x]
-
     return pixel_matrix
+
 
 def main():
     led_detection = LED_Detection()
@@ -84,7 +84,6 @@ def main():
     prev_time = 0
     while True:
         ret, frame = led_detection.cap.read()
-        # print(frame)
         current_time = time.time()
         fps = 1 / (current_time - prev_time)
         prev_time = current_time
@@ -99,6 +98,7 @@ def main():
             break
 
     led_detection.stop_capture()
+
 
 if __name__ == "__main__":
     main()
