@@ -42,8 +42,7 @@ class LED_Detection:
         elif event == cv2.EVENT_RBUTTONDOWN:
             self.list_of_rois = []
             self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
-            if self.list_of_rois:
-                cv2.imshow("Rectangle Drawing", self.mask_of_rois)
+
 
     def print_roi_colors(self, frame):
         for roi in self.list_of_rois:
@@ -93,6 +92,15 @@ def main():
         frame = cv2.bitwise_or(frame, led_detection.mask_of_rois)
         cv2.imshow('frame', frame)
         cv2.setMouseCallback("frame", led_detection.draw_rectangle)
+
+        # show windows with checked areas if list of areas is not empty
+        if led_detection.list_of_rois:
+            cv2.imshow("Rectangle Drawing", led_detection.mask_of_rois)
+        # destroy window with checked areas if list of areas is empty
+        if cv2.getWindowProperty("Rectangle Drawing", cv2.WND_PROP_VISIBLE) and not led_detection.list_of_rois:
+            cv2.destroyWindow("Rectangle Drawing")
+
+
 
         if cv2.waitKey(1) == ord('q'):
             break
