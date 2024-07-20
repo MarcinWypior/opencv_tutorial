@@ -1,6 +1,8 @@
 import cv2
 import time
+import os
 import numpy as np
+from xml.dom import minidom
 
 
 class LED_Detection:
@@ -11,7 +13,25 @@ class LED_Detection:
         self.capture_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         print('capture_height: ', self.capture_height)
         self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
-        self.list_of_rois = []
+
+        path_to_config_xml = r"C:\RAEngineering"
+        if not os.path.exists(path_to_config_xml):
+            os.makedirs(path_to_config_xml)
+        if not os.path.isfile(r"C:\RAEngineering\LED_detection_config.xml"):
+            print("config file doesn't exist")
+            doc = minidom.Document()
+
+            # Create the <root> base element
+            root = doc.createElement("list_of_areas")
+
+            with open(path_to_config_xml + r"\LED_detection_config.xml", "w") as file:
+                file.write(doc.toprettyxml(indent="  "))
+            self.list_of_rois = []
+        else:
+            print("config file does exist")
+            self.list_of_rois = []
+
+        # private variables used for drawing areas to check
         self._start_point = None
         self._end_point = None
         self._drawing = None
@@ -42,7 +62,6 @@ class LED_Detection:
         elif event == cv2.EVENT_RBUTTONDOWN:
             self.list_of_rois = []
             self.mask_of_rois = np.zeros((self.capture_height, self.capture_width, 3), dtype=np.uint8)
-
 
     def print_roi_colors(self, frame):
         for roi in self.list_of_rois:
@@ -100,10 +119,10 @@ def main():
         if cv2.getWindowProperty("Rectangle Drawing", cv2.WND_PROP_VISIBLE) and not led_detection.list_of_rois:
             cv2.destroyWindow("Rectangle Drawing")
 
-
-
         if cv2.waitKey(1) == ord('q'):
             break
+
+        print(led_detection.list_of_rois)
 
     led_detection.stop_capture()
 
